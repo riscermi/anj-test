@@ -1,0 +1,1312 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ANJ · Test 9. lekce — Trenažér</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,600;0,9..144,800;1,9..144,500&family=JetBrains+Mono:wght@400;600&family=Inter+Tight:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#1a1714;
+    --paper:#f4efe6;
+    --paper-2:#ece5d6;
+    --rule:#d6ccb8;
+    --accent:#c8381f;
+    --accent-2:#e87a2b;
+    --ok:#3e7a3a;
+    --bad:#b8341e;
+    --muted:#8a7f6e;
+    --shadow: 0 1px 0 rgba(26,23,20,.04), 0 12px 32px -12px rgba(26,23,20,.18);
+    --sidebar-w: 380px;
+  }
+
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0;background:var(--paper);color:var(--ink);font-family:'Inter Tight',system-ui,sans-serif;-webkit-font-smoothing:antialiased}
+  body{
+    background-image:
+      radial-gradient(circle at 20% 10%, rgba(232,122,43,.06), transparent 40%),
+      radial-gradient(circle at 85% 80%, rgba(200,56,31,.05), transparent 45%);
+    min-height:100vh;
+  }
+
+  /* ===== LAYOUT ===== */
+  .app{display:flex;min-height:100vh;position:relative}
+
+  /* ===== SIDEBAR ===== */
+  #sidebar{
+    position:fixed;top:0;left:0;height:100vh;width:var(--sidebar-w);
+    background:#faf6ec;
+    border-right:1px solid var(--rule);
+    transform:translateX(-100%);
+    transition:transform .35s cubic-bezier(.4,0,.2,1);
+    z-index:50;
+    display:flex;flex-direction:column;
+    box-shadow: 8px 0 32px -16px rgba(0,0,0,.15);
+  }
+  #sidebar.open{transform:translateX(0)}
+
+  .sb-head{
+    padding:22px 22px 16px;border-bottom:1px solid var(--rule);
+    display:flex;justify-content:space-between;align-items:flex-end;gap:12px;
+  }
+  .sb-title{font-family:'Fraunces',serif;font-weight:800;font-size:22px;letter-spacing:-.02em;line-height:1}
+  .sb-sub{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.15em;margin-top:6px}
+  .sb-close{background:none;border:1px solid var(--rule);width:34px;height:34px;border-radius:50%;cursor:pointer;font-size:18px;color:var(--ink);display:flex;align-items:center;justify-content:center;transition:all .2s}
+  .sb-close:hover{background:var(--ink);color:var(--paper)}
+
+  .sb-stats{display:grid;grid-template-columns:1fr 1fr 1fr;gap:1px;background:var(--rule);border-bottom:1px solid var(--rule)}
+  .sb-stat{background:#faf6ec;padding:14px 10px;text-align:center}
+  .sb-stat-num{font-family:'Fraunces',serif;font-size:24px;font-weight:800;line-height:1}
+  .sb-stat-lbl{font-family:'JetBrains Mono',monospace;font-size:9px;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);margin-top:4px}
+  .sb-stat.ok .sb-stat-num{color:var(--ok)}
+  .sb-stat.bad .sb-stat-num{color:var(--bad)}
+  .sb-stat.new .sb-stat-num{color:var(--muted)}
+
+  .sb-content{flex:1;overflow-y:auto;padding:8px 0}
+  .sb-section{padding:14px 0 4px}
+  .sb-section-head{
+    display:flex;justify-content:space-between;align-items:center;
+    padding:6px 22px 10px;
+    font-family:'JetBrains Mono',monospace;
+    font-size:10px;text-transform:uppercase;letter-spacing:.18em;color:var(--muted);
+    cursor:pointer;user-select:none;
+  }
+  .sb-section-head:hover{color:var(--ink)}
+  .sb-section-head .caret{transition:transform .2s;display:inline-block}
+  .sb-section.collapsed .caret{transform:rotate(-90deg)}
+  .sb-section.collapsed .sb-list{display:none}
+  .sb-list{padding:0 10px}
+
+  .sb-item{
+    display:flex;align-items:flex-start;gap:10px;
+    padding:8px 12px;border-radius:6px;cursor:pointer;
+    font-size:13px;line-height:1.35;
+    transition:background .15s;
+  }
+  .sb-item:hover{background:var(--paper-2)}
+  .sb-item.active{background:var(--ink);color:var(--paper)}
+  .sb-item.active .sb-cz{color:var(--paper)}
+  .sb-item.active .sb-en{color:var(--accent-2)}
+
+  .sb-dot{
+    width:10px;height:10px;border-radius:50%;margin-top:5px;flex-shrink:0;cursor:pointer;
+    border:1.5px solid rgba(0,0,0,.15);
+    transition:transform .15s;
+  }
+  .sb-dot:hover{transform:scale(1.3)}
+  .sb-dot.untried{background:#d6ccb8}
+  .sb-dot.learned{background:var(--ok)}
+  .sb-dot.struggling{background:var(--bad)}
+
+  .sb-body{flex:1;min-width:0}
+  .sb-cz{font-weight:600;font-size:13px}
+  .sb-en{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--accent);margin-top:2px;word-break:break-word}
+  .sb-gr{font-size:11.5px;color:var(--muted);margin-top:3px;font-style:italic}
+
+  /* ===== MAIN ===== */
+  #main{flex:1;min-height:100vh;padding:28px 32px 60px;max-width:100%}
+
+  .topbar{
+    display:flex;align-items:center;gap:14px;
+    margin-bottom:28px;
+    flex-wrap:wrap;
+  }
+  .menu-btn{
+    background:var(--ink);color:var(--paper);border:none;
+    padding:12px 18px;border-radius:999px;cursor:pointer;
+    font-family:'JetBrains Mono',monospace;font-size:11px;text-transform:uppercase;letter-spacing:.12em;
+    display:flex;align-items:center;gap:8px;
+    transition:transform .2s;
+  }
+  .menu-btn:hover{transform:translateY(-1px)}
+  .menu-btn .bars{display:inline-flex;flex-direction:column;gap:3px}
+  .menu-btn .bars span{display:block;width:14px;height:1.5px;background:var(--paper)}
+
+  .masthead{margin-bottom:6px}
+  .masthead .kicker{font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:.25em;text-transform:uppercase;color:var(--accent)}
+  .masthead h1{font-family:'Fraunces',serif;font-weight:800;font-size:clamp(32px,5vw,52px);line-height:.95;letter-spacing:-.03em;margin:6px 0 0}
+  .masthead h1 em{font-style:italic;color:var(--accent);font-weight:500}
+  .masthead .meta{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--muted);margin-top:10px;letter-spacing:.05em}
+
+  .rule{height:1px;background:var(--rule);margin:24px 0 20px;position:relative}
+  .rule::after{content:"◆";position:absolute;left:50%;top:-9px;transform:translateX(-50%);background:var(--paper);padding:0 14px;color:var(--rule);font-size:12px}
+
+  /* ===== MODE TABS ===== */
+  .tabs{
+    display:flex;gap:0;margin-bottom:28px;
+    border:1px solid var(--ink);border-radius:999px;padding:4px;
+    background:var(--paper);
+    width:fit-content;max-width:100%;flex-wrap:wrap;
+  }
+  .tab{
+    background:transparent;border:none;cursor:pointer;
+    padding:10px 20px;border-radius:999px;
+    font-family:'Inter Tight',sans-serif;font-weight:600;font-size:13px;
+    color:var(--ink);
+    display:flex;align-items:center;gap:8px;
+    transition:all .2s;
+  }
+  .tab:hover{background:var(--paper-2)}
+  .tab.active{background:var(--ink);color:var(--paper)}
+  .tab .num{font-family:'JetBrains Mono',monospace;font-size:10px;opacity:.6}
+
+  /* ===== CARD ===== */
+  .stage{max-width:760px}
+  .card{
+    background:#faf6ec;
+    border:1px solid var(--rule);
+    border-radius:4px;
+    padding:36px 40px 32px;
+    box-shadow:var(--shadow);
+    position:relative;
+    overflow:hidden;
+  }
+  .card::before{
+    content:"";position:absolute;top:0;left:0;right:0;height:4px;
+    background:linear-gradient(90deg,var(--accent),var(--accent-2));
+  }
+
+  .card-head{
+    display:flex;justify-content:space-between;align-items:baseline;
+    margin-bottom:24px;
+    padding-bottom:14px;border-bottom:1px dashed var(--rule);
+  }
+  .card-kicker{font-family:'JetBrains Mono',monospace;font-size:10px;text-transform:uppercase;letter-spacing:.2em;color:var(--accent)}
+  .card-counter{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--muted)}
+
+  /* ===== VOCAB MODE ===== */
+  .voc-cz{
+    font-family:'Fraunces',serif;font-weight:800;font-size:clamp(36px,6vw,64px);
+    line-height:1.05;letter-spacing:-.02em;
+    margin:18px 0 8px;
+  }
+  .voc-hint{font-family:'JetBrains Mono',monospace;font-size:10px;text-transform:uppercase;letter-spacing:.18em;color:var(--muted)}
+  .voc-flip{
+    min-height:100px;
+    margin:28px 0 32px;
+    display:flex;align-items:center;justify-content:center;
+    text-align:center;
+    padding:20px;
+    border:1px dashed var(--rule);
+    border-radius:4px;
+    background:var(--paper);
+    cursor:pointer;
+    transition:all .2s;
+    position:relative;
+  }
+  .voc-flip:hover{border-color:var(--ink)}
+  .voc-flip.revealed{background:var(--ink)}
+  .voc-flip.revealed .voc-en{color:var(--paper)}
+  .voc-flip.revealed .voc-ipa{color:var(--accent-2)}
+  .voc-flip .tap-hint{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--muted);letter-spacing:.15em;text-transform:uppercase}
+  .voc-en{font-family:'Fraunces',serif;font-style:italic;font-weight:500;font-size:clamp(26px,4vw,40px);color:var(--accent);line-height:1.1}
+  .voc-ipa{font-family:'JetBrains Mono',monospace;font-size:13px;color:var(--muted);margin-top:6px}
+  .voc-ex{font-size:14px;color:var(--ink);opacity:.75;margin-top:10px;font-style:italic;max-width:500px}
+
+  /* ===== VERB MODE ===== */
+  .verb-cz{font-family:'Fraunces',serif;font-weight:800;font-size:clamp(34px,5vw,52px);letter-spacing:-.02em;margin:14px 0 4px}
+  .verb-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:22px}
+  .verb-field{display:flex;flex-direction:column}
+  .verb-field label{font-family:'JetBrains Mono',monospace;font-size:10px;text-transform:uppercase;letter-spacing:.12em;color:var(--muted);margin-bottom:6px}
+  .verb-input{
+    padding:14px 14px;font-size:16px;
+    border:1.5px solid var(--rule);background:var(--paper);
+    border-radius:4px;font-family:'JetBrains Mono',monospace;
+    color:var(--ink);
+    transition:border-color .2s;
+  }
+  .verb-input:focus{outline:none;border-color:var(--ink)}
+  .verb-input.ok{border-color:var(--ok);background:#eaf3e9}
+  .verb-input.err{border-color:var(--bad);background:#fbe8e4}
+
+  /* ===== GRAMMAR MODE ===== */
+  .gr-text{font-size:18px;line-height:1.7;margin:14px 0 22px;font-family:'Fraunces',serif;font-weight:500}
+  .gr-text .blank{
+    display:inline-block;min-width:120px;padding:2px 10px;
+    border-bottom:2px dashed var(--accent);
+    font-family:'JetBrains Mono',monospace;font-size:14px;
+    background:var(--paper);font-weight:600;
+    color:var(--accent);
+    vertical-align:baseline;
+  }
+  .gr-text .blank.filled{border-bottom-style:solid}
+  .gr-text .blank.ok{border-color:var(--ok);color:var(--ok)}
+  .gr-text .blank.err{border-color:var(--bad);color:var(--bad)}
+
+  .gr-options{display:flex;flex-direction:column;gap:8px;margin-top:18px}
+  .gr-opt{
+    background:var(--paper);
+    border:1.5px solid var(--rule);
+    padding:14px 18px;border-radius:4px;cursor:pointer;
+    font-family:'JetBrains Mono',monospace;font-size:13px;
+    text-align:left;color:var(--ink);
+    transition:all .15s;
+    display:flex;align-items:center;gap:12px;
+  }
+  .gr-opt:hover{border-color:var(--ink)}
+  .gr-opt .letter{
+    width:26px;height:26px;border-radius:50%;
+    background:var(--ink);color:var(--paper);
+    display:flex;align-items:center;justify-content:center;
+    font-size:11px;font-weight:700;flex-shrink:0;
+  }
+  .gr-opt.picked{border-color:var(--ink);background:var(--paper-2)}
+  .gr-opt.ok{border-color:var(--ok);background:#eaf3e9}
+  .gr-opt.ok .letter{background:var(--ok)}
+  .gr-opt.err{border-color:var(--bad);background:#fbe8e4}
+  .gr-opt.err .letter{background:var(--bad)}
+
+  .gr-type{
+    font-family:'Fraunces',serif;font-style:italic;color:var(--muted);font-size:13px;
+    margin-bottom:8px;
+  }
+
+  /* ===== FEEDBACK ===== */
+  .feedback{
+    margin-top:20px;padding:18px 20px;border-radius:4px;
+    font-size:14px;line-height:1.55;
+    border-left:4px solid var(--muted);
+    background:var(--paper);
+    display:none;
+  }
+  .feedback.show{display:block;animation:slideIn .3s ease}
+  .feedback.ok{border-color:var(--ok);background:#eaf3e9}
+  .feedback.bad{border-color:var(--bad);background:#fbe8e4}
+  .feedback.info{border-color:var(--accent-2);background:#fdf1e3}
+  .feedback .fb-title{font-family:'Fraunces',serif;font-weight:800;font-size:16px;margin-bottom:6px;letter-spacing:-.01em}
+  .feedback .fb-body{color:var(--ink)}
+  .feedback .fb-body strong{color:var(--accent)}
+  .feedback code{font-family:'JetBrains Mono',monospace;background:rgba(0,0,0,.06);padding:1px 6px;border-radius:3px;font-size:13px}
+
+  @keyframes slideIn{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:translateY(0)}}
+
+  /* ===== ACTION BUTTONS ===== */
+  .actions{display:flex;gap:10px;margin-top:24px;flex-wrap:wrap}
+  .btn{
+    padding:14px 22px;border-radius:4px;cursor:pointer;
+    font-family:'Inter Tight',sans-serif;font-weight:600;font-size:13px;
+    border:1.5px solid var(--ink);
+    display:flex;align-items:center;justify-content:center;gap:8px;
+    transition:all .15s;
+    flex:1;min-width:120px;
+  }
+  .btn-primary{background:var(--ink);color:var(--paper)}
+  .btn-primary:hover{background:var(--accent);border-color:var(--accent)}
+  .btn-ghost{background:transparent;color:var(--ink)}
+  .btn-ghost:hover{background:var(--ink);color:var(--paper)}
+  .btn-ok{background:var(--ok);color:var(--paper);border-color:var(--ok)}
+  .btn-ok:hover{filter:brightness(1.1)}
+  .btn-bad{background:var(--bad);color:var(--paper);border-color:var(--bad)}
+  .btn-bad:hover{filter:brightness(1.1)}
+  .btn-muted{background:var(--paper);color:var(--muted);border-color:var(--rule)}
+  .btn-muted:hover{color:var(--ink);border-color:var(--ink)}
+
+  .nav-row{display:flex;gap:8px;margin-top:14px}
+  .nav-btn{
+    flex:1;padding:12px;border-radius:4px;cursor:pointer;
+    background:var(--paper);border:1px solid var(--rule);
+    font-family:'JetBrains Mono',monospace;font-size:11px;text-transform:uppercase;letter-spacing:.1em;
+    color:var(--ink);
+    transition:all .15s;
+  }
+  .nav-btn:hover{background:var(--ink);color:var(--paper);border-color:var(--ink)}
+
+  /* ===== FOOTER META ===== */
+  .foot-meta{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--muted);letter-spacing:.12em;text-transform:uppercase;margin-top:28px;text-align:center}
+
+  /* ===== OVERLAY ===== */
+  .overlay{
+    position:fixed;inset:0;background:rgba(26,23,20,.3);
+    z-index:40;opacity:0;pointer-events:none;
+    transition:opacity .3s;
+  }
+  .overlay.show{opacity:1;pointer-events:auto}
+
+  /* ===== RESPONSIVE ===== */
+  @media (max-width:720px){
+    #main{padding:20px 18px 50px}
+    .card{padding:24px 20px}
+    .verb-grid{grid-template-columns:1fr;gap:8px}
+    :root{--sidebar-w:88vw}
+    .tabs{width:100%}
+    .tab{flex:1;justify-content:center;padding:10px 12px}
+    .tab .num{display:none}
+  }
+
+  ::-webkit-scrollbar{width:8px;height:8px}
+  ::-webkit-scrollbar-track{background:transparent}
+  ::-webkit-scrollbar-thumb{background:var(--rule);border-radius:4px}
+  ::-webkit-scrollbar-thumb:hover{background:var(--muted)}
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- ============ SIDEBAR ============ -->
+  <aside id="sidebar">
+    <div class="sb-head">
+      <div>
+        <div class="sb-title">Můj tahák</div>
+        <div class="sb-sub">9. lekce · přehled &amp; pokrok</div>
+      </div>
+      <button class="sb-close" onclick="toggleSidebar()" aria-label="Zavřít">×</button>
+    </div>
+    <div class="sb-stats" id="sb-stats"></div>
+    <div class="sb-content" id="sb-content"></div>
+  </aside>
+
+  <div class="overlay" id="overlay" onclick="toggleSidebar()"></div>
+
+  <!-- ============ MAIN ============ -->
+  <main id="main">
+
+    <div class="topbar">
+      <button class="menu-btn" onclick="toggleSidebar()">
+        <span class="bars"><span></span><span></span><span></span></span>
+        Tahák &amp; pokrok
+      </button>
+    </div>
+
+    <header class="masthead">
+      <div class="kicker">ANJ · IOT3/IF3 · Víchová — 17. 4.</div>
+      <h1>Druhý <em>zápočtový</em> test<br>9. lekce · <em>Good Business</em></h1>
+      <div class="meta">Vocabulary 86, 162 &nbsp;·&nbsp; Narrative tenses &nbsp;·&nbsp; Irregular verbs &nbsp;·&nbsp; Clauses of contrast &amp; purpose</div>
+    </header>
+
+    <div class="rule"></div>
+
+    <div class="tabs">
+      <button class="tab active" data-mode="vocab" onclick="switchMode('vocab')">📚 Slovíčka <span class="num" id="cnt-vocab"></span></button>
+      <button class="tab" data-mode="verbs" onclick="switchMode('verbs')">✍️ Slovesa <span class="num" id="cnt-verbs"></span></button>
+      <button class="tab" data-mode="grammar" onclick="switchMode('grammar')">⏳ Gramatika <span class="num" id="cnt-grammar"></span></button>
+    </div>
+
+    <div class="stage">
+      <div class="card" id="card"></div>
+      <div class="foot-meta">Tip: kliknutím na barevnou tečku v taháku ručně přepneš stav · zelená = umím, červená = neumím, šedá = nezkoušeno</div>
+    </div>
+
+  </main>
+</div>
+
+<script>
+/* ============================================================
+   DATA — vše z fotek (str. 86, 162, 187/188, 149, 307)
+   ============================================================ */
+
+const VOCAB = [
+  // --- p. 187: Advertising (File 9) ---
+  {cz:"reklamní kampaň", en:"advertising campaign", ipa:"/ˈædvətaɪzɪŋ kæmˈpeɪn/", ex:"The company ran a successful advertising campaign.", src:"p.187"},
+  {cz:"reklamy, inzeráty", en:"advertisements", ipa:"/ədˈvɜːtɪsmənts/", ex:"The marketing department created a series of advertisements.", src:"p.187"},
+  {cz:"značka", en:"brand", ipa:"/brænd/", ex:"The brand became famous because of a powerful campaign.", src:"p.187"},
+  {cz:"tvrzení", en:"claims", ipa:"/kleɪmz/", ex:"The advert made claims that the product would help you become stronger.", src:"p.187"},
+  {cz:"spotřebitelé", en:"consumers", ipa:"/kənˈsjuːməz/", ex:"Consumers are spending their money carefully.", src:"p.187"},
+  {cz:"zavádějící, matoucí", en:"misleading", ipa:"/ˌmɪsˈliːdɪŋ/", ex:"Companies can be sued for misleading advertisements.", src:"p.187"},
+  {cz:"reklama (publicita)", en:"publicity", ipa:"/pʌbˈlɪsəti/", ex:"The company hoped to get a lot of good publicity.", src:"p.187"},
+  {cz:"slogan", en:"slogan", ipa:"/ˈsləʊɡən/", ex:"A memorable slogan is very important in advertising.", src:"p.187"},
+  {cz:"(za)žalovat, podat žalobu", en:"sue", ipa:"/suː/", ex:"The company threatened to sue the journalists.", src:"p.187"},
+
+  // --- p. 187/188: Business Vocabulary Bank ---
+  {cz:"ještě něco (k projednání)", en:"any other business", ipa:"/ˈeni ˈʌðə ˈbɪznəs/", ex:"Is there any other business?", src:"p.187"},
+  {cz:"získat vedoucí pozici na trhu", en:"become the market leader", ipa:"/bɪˈkʌm ðə ˈmɑːkɪt ˈliːdə/", ex:"The company set out to become the market leader.", src:"p.187"},
+  {cz:"konjunktura, rozmach", en:"boom", ipa:"/buːm/", ex:"The economic boom helped many people improve their lives.", src:"p.187"},
+  {cz:"pobočka", en:"branch", ipa:"/brɑːntʃ/", ex:"This chain of shops has branches in many cities.", src:"p.187"},
+  {cz:"řetězec (obchodů)", en:"chain", ipa:"/tʃeɪn/", ex:"It's a large chain of shops with branches in many major cities.", src:"p.187"},
+  {cz:"zavřít, uzavřít (firmu)", en:"close down", ipa:"/kləʊz daʊn/", ex:"The company had to close down after two hundred years in business.", src:"p.187"},
+  {cz:"uzavřít obchod/dohodu", en:"do a deal", ipa:"/duː ə diːl/", ex:"I want to do a deal with you.", src:"p.187"},
+  {cz:"vykonávat práci", en:"do a job", ipa:"/duː ə dʒɒb/", ex:"Do a job well and you'll get promoted.", src:"p.187"},
+  {cz:"nemít úspěch, vést si špatně", en:"do badly", ipa:"/duː ˈbædli/", ex:"Companies will do badly because of economic problems.", src:"p.187"},
+  {cz:"obchodovat, provozovat obchodní činnost", en:"do business", ipa:"/duː ˈbɪznəs/", ex:"Many companies do business in a variety of countries.", src:"p.187"},
+  {cz:"dělat průzkum trhu", en:"do market research", ipa:"/duː ˈmɑːkɪt rɪˈsɜːtʃ/", ex:"Many companies do market research to find out more about their customers.", src:"p.187"},
+  {cz:"dařit se (dobře)", en:"do well", ipa:"/duː wel/", ex:"If I do well I might make more money.", src:"p.187"},
+  {cz:"poklesnout", en:"drop", ipa:"/drɒp/", ex:"The standard of living will drop if we have a recession.", src:"p.187"},
+  {cz:"rozšířit, rozrůst se", en:"expand", ipa:"/ɪkˈspænd/", ex:"The company is set to expand later in the year.", src:"p.187"},
+  {cz:"vyvážet, exportovat", en:"export", ipa:"/ɪkˈspɔːt/", ex:"They export the product around the world.", src:"p.187"},
+  {cz:"propadák", en:"flop", ipa:"/flɒp/", ex:"The product was a complete flop. Hardly anyone bought it.", src:"p.187"},
+
+  // --- p. 188: continuation ---
+  {cz:"dát se do práce, přejít k věci", en:"get down to business", ipa:"/ɡet daʊn tu ˈbɪznəs/", ex:"Let's get down to business. We can't waste any time.", src:"p.188"},
+  {cz:"zkrachovat, jít do úpadku", en:"go out of business", ipa:"/ɡəʊ aʊt ɒv ˈbɪznəs/", ex:"My favourite local café went out of business last winter.", src:"p.188"},
+  {cz:"růst", en:"grow", ipa:"/ɡrəʊ/", ex:"Our company hopes to grow by 5% next year.", src:"p.188"},
+  {cz:"ředitelství, ústředí, centrála", en:"head office", ipa:"/hed ˈɒfɪs/", ex:"The company has branches in many British cities, but the head office is in London.", src:"p.188"},
+  {cz:"dovážet, importovat", en:"import", ipa:"/ɪmˈpɔːt/", ex:"Our country imports most of its oil.", src:"p.188"},
+  {cz:"představení, uvedení na trh", en:"launch", ipa:"/lɔːntʃ/", ex:"The launch of the new phone is next week.", src:"p.188"},
+  {cz:"rozhodnout se, učinit rozhodnutí", en:"make a decision", ipa:"/meɪk ə dɪˈsɪʒn/", ex:"I have to make a decision before the end of the day.", src:"p.188"},
+  {cz:"utrpět ztrátu", en:"make a loss", ipa:"/meɪk ə lɒs/", ex:"The large company made a loss for the first time this year.", src:"p.188"},
+  {cz:"dosáhnout zisku", en:"make a profit", ipa:"/meɪk ə ˈprɒfɪt/", ex:"I think my business will make a profit this year.", src:"p.188"},
+  {cz:"vydělat", en:"make money", ipa:"/meɪk ˈmʌni/", ex:"I need to make money quickly.", src:"p.188"},
+  {cz:"propustit z nadbytečnosti", en:"make (sb) redundant", ipa:"/meɪk rɪˈdʌndənt/", ex:"When you make someone redundant it's important to manage it effectively.", src:"p.188"},
+  {cz:"vyrábět", en:"manufacture", ipa:"/ˌmænjuˈfæktʃə/", ex:"China manufactures many products for the world.", src:"p.188"},
+  {cz:"být solidní/profesionální, myslet to vážně", en:"mean business", ipa:"/miːn ˈbɪznəs/", ex:"You should take them seriously — they mean business.", src:"p.188"},
+  {cz:"sloučit, spojit (se)", en:"merge", ipa:"/mɜːdʒ/", ex:"The two companies will merge to create one large company.", src:"p.188"},
+  {cz:"starat se o sebe (neplést se)", en:"mind your own business", ipa:"/maɪnd jɔː əʊn ˈbɪznəs/", ex:"What's in your bag? — Mind your own business!", src:"p.188"},
+  {cz:"spojit práci se zábavou", en:"mix business with pleasure", ipa:"/mɪks ˈbɪznəs wɪð ˈpleʒə/", ex:"I'm going to a conference, but I'll mix business with pleasure.", src:"p.188"},
+  {cz:"do toho ti nic není", en:"none of your business", ipa:"/nʌn ɒv jɔː ˈbɪznəs/", ex:"What are you thinking about? — None of your business!", src:"p.188"},
+  {cz:"produkovat", en:"produce", ipa:"/prəˈdjuːs/", ex:"The region produces most of the world's supply of oil.", src:"p.188"},
+  {cz:"recese, hospodářský pokles", en:"recession", ipa:"/rɪˈseʃn/", ex:"Many companies failed because of the recession.", src:"p.188"},
+  {cz:"založit", en:"set up", ipa:"/set ʌp/", ex:"The company was set up in 1990.", src:"p.188"},
+  {cz:"převzít (firmu)", en:"take over", ipa:"/teɪk ˈəʊvə/", ex:"The larger company wants to take over our smaller company.", src:"p.188"},
+  {cz:"neuzavřené záležitosti", en:"unfinished business", ipa:"/ʌnˈfɪnɪʃt ˈbɪznəs/", ex:"I've got some unfinished business with the company.", src:"p.188"},
+
+  // --- p. 86: from the Red Bull article ---
+  {cz:"rozdíl", en:"difference", ipa:"/ˈdɪfrəns/", ex:"There's a big difference between exaggerating the truth and making false claims.", src:"p.86"},
+  {cz:"přehánět", en:"exaggerate", ipa:"/ɪɡˈzædʒəreɪt/", ex:"Many companies exaggerate in their ads.", src:"p.86"},
+  {cz:"vědecky dokázaný", en:"scientifically proven", ipa:"/ˌsaɪənˈtɪfɪkli ˈpruːvn/", ex:"Scientifically proven results.", src:"p.86"},
+  {cz:"zaručený", en:"guaranteed", ipa:"/ˌɡærənˈtiːd/", ex:"With guaranteed results.", src:"p.86"},
+  {cz:"poškozená pověst", en:"damaged reputation", ipa:"/ˈdæmɪdʒd ˌrepjuˈteɪʃn/", ex:"A damaged reputation is hard to repair.", src:"p.86"},
+  {cz:"ovlivňovat", en:"affect", ipa:"/əˈfekt/", ex:"Several examples of false advertising have affected big brands.", src:"p.86"},
+  {cz:"koncentrace / soustředění", en:"concentration", ipa:"/ˌkɒnsnˈtreɪʃn/", ex:"Red Bull claimed it improved concentration and reaction times.", src:"p.86"},
+  {cz:"reakční doba", en:"reaction time", ipa:"/riˈækʃn taɪm/", ex:"Red Bull claimed it improved concentration and reaction times.", src:"p.86"},
+  {cz:"oddaný zákazník", en:"devoted consumer", ipa:"/dɪˈvəʊtɪd kənˈsjuːmə/", ex:"Benjamin Careathers was one of several devoted consumers.", src:"p.86"},
+  {cz:"soud", en:"court", ipa:"/kɔːt/", ex:"The company was taken to court.", src:"p.86"},
+  {cz:"poškodit (někoho)", en:"harm", ipa:"/hɑːm/", ex:"He was harmed by what the company claimed.", src:"p.86"},
+  {cz:"narážet, dotknout se tématu", en:"touch on", ipa:"/tʌtʃ ɒn/", ex:"The advert touches on consumer trust.", src:"p.86"},
+  {cz:"vyhnout se", en:"avoid", ipa:"/əˈvɔɪd/", ex:"Companies try to avoid bad publicity.", src:"p.86"},
+  {cz:"dohoda / ujednání", en:"agreement", ipa:"/əˈɡriːmənt/", ex:"The company agreed to pay out a maximum of $13 million in an agreement.", src:"p.86"},
+
+  // --- p. 188: Word building (accommodation etc.) ---
+  {cz:"absence, nepřítomnost", en:"absence", ipa:"/ˈæbsəns/", ex:"Her absence was noted by the teacher.", src:"p.188"},
+  {cz:"hojnost, přehršel", en:"abundance", ipa:"/əˈbʌndəns/", ex:"The city is famous for its abundance of parks and plazas.", src:"p.188"},
+  {cz:"ubytování", en:"accommodation", ipa:"/əˌkɒməˈdeɪʃn/", ex:"Accommodation for tourists can be very expensive in London.", src:"p.188"},
+  {cz:"alkoholismus", en:"alcoholism", ipa:"/ˈælkəhɒlɪzəm/", ex:"Alcoholism is a growing problem as drink becomes cheaper.", src:"p.188"},
+  {cz:"protispolečenský", en:"antisocial", ipa:"/ˌæntiˈsəʊʃl/", ex:"Vandalism is antisocial behaviour.", src:"p.188"},
+  {cz:"autopilot", en:"autopilot", ipa:"/ˈɔːtəʊpaɪlət/", ex:"The pilot put the plane on autopilot.", src:"p.188"},
+  {cz:"víra, přesvědčení", en:"belief", ipa:"/bɪˈliːf/", ex:"It's my belief that this news story isn't entirely true.", src:"p.188"}
+];
+
+/* --- NEPRAVIDELNÁ SLOVESA z fotky (irregular v) --- */
+const VERBS = [
+  {cz:"svítit, zářit", f:["shine","shone","shone"]},
+  {cz:"hodit, házet", f:["throw","threw","thrown"]},
+  {cz:"klečet", f:["kneel","knelt","knelt"]},
+  {cz:"potopit (se)", f:["sink","sank","sunk"]},
+  {cz:"stát (vzpřímeně)", f:["stand","stood","stood"]},
+  {cz:"porazit, bít", f:["beat","beat","beaten"]},
+  {cz:"říct, vyprávět", f:["tell","told","told"]},
+  {cz:"říct, povědět", f:["say","said","said"]},
+  {cz:"mluvit", f:["speak","spoke","spoken"]},
+  {cz:"nosit, mít na sobě", f:["wear","wore","worn"]},
+  {cz:"kreslit, malovat", f:["draw","drew","drawn"]},
+  {cz:"pověsit, viset", f:["hang","hung","hung"]},
+  {cz:"zavřít", f:["shut","shut","shut"]},
+  {cz:"mínit, znamenat", f:["mean","meant","meant"]}
+];
+
+/* --- GRAMATIKA: narrative tenses + past perfect continuous (z fotek 1 a 3) --- */
+const GRAMMAR = [
+  // p. 86 exercise 3a — Circle the correct verb form (tick if both correct)
+  {
+    type:"circle",
+    src:"p.86 ex.3a",
+    topic:"pastPerfect",
+    prompt:"Tim couldn't close his case because he ___ too many clothes in it.",
+    options:["had put","had been putting","both correct"],
+    answer:2, // oba jsou OK → zaškrtnout
+    explain:"Obě varianty jdou. <strong>Had put</strong> (Past Perfect Simple) zdůrazní dokončené naskládání oblečení. <strong>Had been putting</strong> (Past Perfect Continuous) zdůrazní proces balení, který vedl k tomu, že se kufr nedal zavřít. V učebnici je u tohoto cvičení fajfka (✓) = oba tvary jsou správně."
+  },
+  {
+    type:"circle",
+    src:"p.86 ex.3a",
+    topic:"pastPerfect",
+    prompt:"She ___ for the same airline for eight years before she was promoted.",
+    options:["had worked","had been working","both correct"],
+    answer:2,
+    explain:"Zase oba tvary jsou v pořádku (v učebnici ✓). <strong>Had worked</strong> = fakt, že tam osm let pracovala. <strong>Had been working</strong> = zdůraznění délky činnosti, která trvala až do povýšení."
+  },
+  {
+    type:"circle",
+    src:"p.86 ex.3a",
+    topic:"pastPerfectCont",
+    prompt:"I was delighted when I found my passport. I ___ for it for hours.",
+    options:["had looked","had been looking"],
+    answer:1,
+    explain:"<strong>Had been looking</strong> — Past Perfect Continuous. S časovým údajem „for hours\" chceme zdůraznit <em>trvání</em> té činnosti (hledal jsem ho hodiny) až do momentu nalezení."
+  },
+  {
+    type:"circle",
+    src:"p.86 ex.3a",
+    topic:"pastPerfect",
+    prompt:"After I ___ my luggage, I took a taxi to my hotel.",
+    options:["had picked up","had been picking up"],
+    answer:0,
+    explain:"<strong>Had picked up</strong> — jde o jednorázovou <em>dokončenou</em> akci, která předcházela dalšímu ději (vzít taxi). Past Perfect Simple je pro děje dokončené před jiným dějem v minulosti."
+  },
+  {
+    type:"circle",
+    src:"p.86 ex.3a",
+    topic:"pastPerfectCont",
+    prompt:"I ___ in departures for 20 minutes when I saw that my flight was boarding at a different gate.",
+    options:["had sat","had been sitting"],
+    answer:1,
+    explain:"<strong>Had been sitting</strong> — Past Perfect Continuous. Zdůrazňuje <em>délku</em> činnosti (20 minut) až do chvíle, kdy se stalo něco nového. Typická konstrukce: „I had been doing sth for X minutes <em>when</em>…\""
+  },
+  {
+    type:"circle",
+    src:"p.86 ex.3a",
+    topic:"pastPerfect",
+    prompt:"They ___ in Manchester before they moved to Scotland.",
+    options:["had lived","had been living","both correct"],
+    answer:2,
+    explain:"Oba tvary jsou správně (v učebnici ✓). <strong>Had lived</strong> = prostý fakt bydlení. <strong>Had been living</strong> = důraz na délku období."
+  },
+  {
+    type:"circle",
+    src:"p.86 ex.3a",
+    topic:"pastPerfectCont",
+    prompt:"The passengers were angry because the airline ___ their flight.",
+    options:["had cancelled","had been cancelling"],
+    answer:0,
+    explain:"<strong>Had cancelled</strong> — jde o <em>jednorázovou dokončenou</em> akci (aerolinka zrušila let — jeden úkon). Průběhový čas by znamenal „rušila to pořád dokola\", což nedává smysl."
+  },
+  {
+    type:"circle",
+    src:"p.86 ex.3a",
+    topic:"pastPerfectCont",
+    prompt:"I was surprised when I was told that my suitcase was too big: I ___ it for years without having to pay for it.",
+    options:["had taken","had been taking"],
+    answer:1,
+    explain:"<strong>Had been taking</strong> — zdůrazňuje opakovanou činnost trvající dlouhou dobu (for years) až do daného momentu v minulosti."
+  },
+
+  // p. 86 ex. 3b — "My parents had never flown" text (Heathrow)
+  {
+    type:"fill",
+    src:"p.86 ex.3b",
+    topic:"pastSimple",
+    prompt:"My parents had never flown before, so they were very nervous when we ___ (arrive) at Heathrow Airport.",
+    answer:"arrived",
+    explain:"<strong>Arrived</strong> — Past Simple. Hlavní děj ve vyprávění (stalo se to a tečka)."
+  },
+  {
+    type:"fill",
+    src:"p.86 ex.3b",
+    topic:"pastCont",
+    prompt:"It ___ (rain), so I ___ (leave) them at the terminal building.",
+    answer:"was raining",
+    answer2:"left",
+    explain:"<strong>Was raining</strong> — Past Continuous pro <em>okolnosti</em> / pozadí děje (zrovna pršelo). <strong>Left</strong> — Past Simple pro hlavní akci."
+  },
+  {
+    type:"fill",
+    src:"p.86 ex.3b",
+    topic:"pastSimple",
+    prompt:"I ___ (go) to park my car in the long-term car park.",
+    answer:"went",
+    explain:"<strong>Went</strong> — Past Simple. Další dokončená akce v příběhu."
+  },
+  {
+    type:"fill",
+    src:"p.86 ex.3b",
+    topic:"pastSimple",
+    prompt:"However, when I ___ (get) to the check-in desk myself, they were nowhere in sight.",
+    answer:"got",
+    explain:"<strong>Got</strong> — Past Simple pro moment v příběhu (když jsem <em>došel</em>)."
+  },
+  {
+    type:"fill",
+    src:"p.86 ex.3b",
+    topic:"pastPerfectCont",
+    prompt:"I ___ (look) for them everywhere until it occurred to me that it was possible they had already checked in.",
+    answer:"had been looking",
+    explain:"<strong>Had been looking</strong> — Past Perfect Continuous. Dlouhodobější činnost před okamžikem v minulosti (hledal jsem je všude, než mě napadlo…)."
+  },
+  {
+    type:"fill",
+    src:"p.86 ex.3b",
+    topic:"pastPerfectCont",
+    prompt:"They ___ (wait) for me in the departure lounge.",
+    answer:"were waiting",
+    explain:"<strong>Were waiting</strong> — Past Continuous pro okolnost/trvající stav v tom daném momentě."
+  },
+  {
+    type:"fill",
+    src:"p.86 ex.3b",
+    topic:"pastPerfect",
+    prompt:"This was a real problem for me because I ___ (give) my passport to my mother, so I couldn't check in.",
+    answer:"had given",
+    explain:"<strong>Had given</strong> — Past Perfect Simple. Akce, která se stala <em>ještě dřív</em> než to, o čem se teď vypráví (dal jsem mámě pas, proto teď nemůžu odbavit)."
+  },
+  {
+    type:"fill",
+    src:"p.86 ex.3b",
+    topic:"pastSimple",
+    prompt:"I ___ (call) my parents on their mobile.",
+    answer:"called",
+    explain:"<strong>Called</strong> — Past Simple. Jednorázová dokončená akce v hlavní linii příběhu."
+  },
+  {
+    type:"fill",
+    src:"p.86 ex.3b",
+    topic:"pastPerfect",
+    prompt:"They ___ (already / go) through to the departure lounge.",
+    answer:"had already gone",
+    explain:"<strong>Had already gone</strong> — Past Perfect Simple s <em>already</em>. Označuje, že se děj stal dříve než jiný děj v minulosti."
+  },
+  {
+    type:"fill",
+    src:"p.86 ex.3b",
+    topic:"pastPerfectCont",
+    prompt:"They ___ (wait) for me for nearly half an hour at the gate.",
+    answer:"had been waiting",
+    explain:"<strong>Had been waiting</strong> — Past Perfect Continuous. Typická kombinace s časovým údajem („for half an hour\") + zdůraznění délky před momentem v minulosti."
+  },
+  {
+    type:"fill",
+    src:"p.86 ex.3b",
+    topic:"pastPerfectCont",
+    prompt:"Apparently, my mum ___ (read) her book and my dad ___ (do) a crossword.",
+    answer:"had been reading",
+    answer2:"had been doing",
+    explain:"<strong>Had been reading / had been doing</strong> — Past Perfect Continuous. Obě činnosti probíhaly během čekání, zdůrazňujeme jejich trvání."
+  },
+
+  // p. 307 — Additional exercises (z osmého cvičení)
+  {
+    type:"fill",
+    src:"p.307 ex.8",
+    topic:"pastSimple",
+    prompt:"Who ___ (invent) the bicycle?",
+    answer:"invented",
+    explain:"<strong>Invented</strong> — Past Simple. Otázka na historický fakt, jednorázová dokončená akce v minulosti."
+  },
+  {
+    type:"fill",
+    src:"p.307 ex.8",
+    topic:"pastPerfect",
+    prompt:"'Do you still have a headache?' 'No, ___ (it / go). I'm all right now.'",
+    answer:"it has gone",
+    explain:"<strong>It has gone</strong> — Present Perfect (bolest hlavy zmizela a má to vliv teď). Pozor, zde to není čistě minulý čas — výsledek je důležitý pro přítomnost."
+  },
+  {
+    type:"fill",
+    src:"p.307 ex.8",
+    topic:"pastPerfect",
+    prompt:"I was the last to leave the office yesterday evening. Everybody else ___ (leave).",
+    answer:"had left",
+    explain:"<strong>Had left</strong> — Past Perfect Simple. Všichni odešli <em>dřív</em>, než jsem odešel já (= vyprávění v minulosti, akce ještě před jinou minulou akcí)."
+  },
+  {
+    type:"fill",
+    src:"p.307 ex.8",
+    topic:"pastPerfect",
+    prompt:"I ___ (go) home when I ___ (leave).",
+    answer:"went",
+    answer2:"had left",
+    explain:"Past Simple („went\") pro hlavní dokončenou akci; Past Perfect („had left\") není typické zde — záleží na verzi; v kontextu „Everybody else had left\" → odešli předtím."
+  },
+  {
+    type:"fill",
+    src:"p.307 ex.8",
+    topic:"pastSimple",
+    prompt:"What ___ (you / do) last weekend?",
+    answer:"did you do",
+    explain:"<strong>Did you do</strong> — Past Simple question. Typická otázka na konkrétní minulý čas („last weekend\")."
+  },
+  {
+    type:"fill",
+    src:"p.307 ex.8",
+    topic:"pastPerfectCont",
+    prompt:"I like your car. How long ___ (you / have) it?",
+    answer:"have you had",
+    explain:"<strong>Have you had</strong> — Present Perfect. „How long\" + trvání do přítomnosti = Present Perfect, ne minulý čas."
+  },
+  {
+    type:"fill",
+    src:"p.307 ex.8",
+    topic:"pastSimple",
+    prompt:"It's a pity the trip was cancelled. I ___ (look) forward to it.",
+    answer:"had been looking",
+    explain:"<strong>Had been looking</strong> — Past Perfect Continuous. Těšil jsem se <em>dlouho</em> na to, než to zrušili."
+  },
+  {
+    type:"fill",
+    src:"p.307 ex.8",
+    topic:"pastPerfectCont",
+    prompt:"Jane is an experienced teacher. ___ (she / teach) for 15 years.",
+    answer:"She has been teaching",
+    explain:"<strong>She has been teaching</strong> — Present Perfect Continuous. 15 let učí a stále učí (trvá to do přítomnosti)."
+  },
+
+  // p. 307 ex. 9 — past continuous vs. used to
+  {
+    type:"fill",
+    src:"p.307 ex.9",
+    topic:"pastCont",
+    prompt:"Ann didn't see me wave to her. She ___ (look) in the other direction.",
+    answer:"was looking",
+    explain:"<strong>Was looking</strong> — Past Continuous. Dlouhotrvající děj v tom okamžiku (dívala se jinam právě ve chvíli, kdy jsem mával)."
+  },
+  {
+    type:"fill",
+    src:"p.307 ex.9",
+    topic:"usedTo",
+    prompt:"I ___ (drive) a lot but I don't use my car very much these days.",
+    answer:"used to drive",
+    explain:"<strong>Used to drive</strong> — dřívější zvyk, který už neplatí. Used to = něco, co se dělávalo v minulosti, ale teď už ne."
+  },
+  {
+    type:"fill",
+    src:"p.307 ex.9",
+    topic:"pastCont",
+    prompt:"I asked the taxi driver to slow down. She ___ (drive) too fast.",
+    answer:"was driving",
+    explain:"<strong>Was driving</strong> — Past Continuous. Probíhající činnost v určité chvíli v minulosti (jela moc rychle v tu chvíli)."
+  },
+  {
+    type:"fill",
+    src:"p.307 ex.9",
+    topic:"pastCont",
+    prompt:"Rosemary and Jonathan met for the first time when they ___ (work) in the same bank.",
+    answer:"were working",
+    explain:"<strong>Were working</strong> — Past Continuous. Okolnost, v níž se odehrála jiná jednorázová akce (poznali se během toho, když oba pracovali v bance)."
+  },
+  {
+    type:"fill",
+    src:"p.307 ex.9",
+    topic:"usedTo",
+    prompt:"When I was a child, I ___ (have) a lot of bad dreams.",
+    answer:"used to have",
+    explain:"<strong>Used to have</strong> — minulý zvyk / stav, který už neplatí."
+  },
+  {
+    type:"fill",
+    src:"p.307 ex.9",
+    topic:"pastCont",
+    prompt:"I wonder what Joe is doing these days. He ___ (live) in Spain when I last heard from him.",
+    answer:"was living",
+    explain:"<strong>Was living</strong> — Past Continuous pro delší dočasný stav v minulosti."
+  },
+  {
+    type:"fill",
+    src:"p.307 ex.9",
+    topic:"pastCont",
+    prompt:"'Where were you yesterday afternoon?' 'I ___ (play) volleyball.'",
+    answer:"was playing",
+    explain:"<strong>Was playing</strong> — Past Continuous. Probíhající aktivita v určitém čase v minulosti."
+  }
+];
+
+/* ============================================================
+   STAV APLIKACE
+   ============================================================ */
+
+let state = {
+  mode: 'vocab',
+  vocabIdx: 0,
+  verbIdx: 0,
+  grammarIdx: 0,
+  vocabRevealed: false,
+  sidebarOpen: false,
+  collapsedSections: {}
+};
+
+/* Stavy progressu (uloženo v paměti — nepoužíváme localStorage kvůli omezení) */
+const progress = {
+  vocab: VOCAB.map(() => 'untried'),
+  verbs: VERBS.map(() => 'untried'),
+  grammar: GRAMMAR.map(() => 'untried')
+};
+
+/* ============================================================
+   SIDEBAR
+   ============================================================ */
+
+function toggleSidebar(){
+  state.sidebarOpen = !state.sidebarOpen;
+  document.getElementById('sidebar').classList.toggle('open', state.sidebarOpen);
+  document.getElementById('overlay').classList.toggle('show', state.sidebarOpen);
+}
+
+function toggleSection(id){
+  state.collapsedSections[id] = !state.collapsedSections[id];
+  renderSidebar();
+}
+
+function cycleStatus(e, kind, idx){
+  e.stopPropagation();
+  const cycle = ['untried','learned','struggling'];
+  const cur = progress[kind][idx];
+  const next = cycle[(cycle.indexOf(cur)+1) % 3];
+  progress[kind][idx] = next;
+  renderSidebar();
+  renderCard();
+}
+
+function setStatus(kind, idx, status){
+  progress[kind][idx] = status;
+  renderSidebar();
+}
+
+function jumpTo(kind, idx){
+  switchMode(kind === 'vocab' ? 'vocab' : kind === 'verbs' ? 'verbs' : 'grammar');
+  if(kind === 'vocab') state.vocabIdx = idx;
+  if(kind === 'verbs') state.verbIdx = idx;
+  if(kind === 'grammar') state.grammarIdx = idx;
+  state.vocabRevealed = false;
+  renderCard();
+  if(window.innerWidth < 720) toggleSidebar();
+}
+
+function countStatus(kind, status){
+  return progress[kind].filter(s => s === status).length;
+}
+
+function renderSidebar(){
+  // stats
+  const total = VOCAB.length + VERBS.length + GRAMMAR.length;
+  const learned = countStatus('vocab','learned') + countStatus('verbs','learned') + countStatus('grammar','learned');
+  const struggling = countStatus('vocab','struggling') + countStatus('verbs','struggling') + countStatus('grammar','struggling');
+  const untried = total - learned - struggling;
+
+  document.getElementById('sb-stats').innerHTML = `
+    <div class="sb-stat ok"><div class="sb-stat-num">${learned}</div><div class="sb-stat-lbl">Umím</div></div>
+    <div class="sb-stat bad"><div class="sb-stat-num">${struggling}</div><div class="sb-stat-lbl">Neumím</div></div>
+    <div class="sb-stat new"><div class="sb-stat-num">${untried}</div><div class="sb-stat-lbl">Nezkoušeno</div></div>
+  `;
+
+  const c = (k) => state.collapsedSections[k] ? 'collapsed' : '';
+
+  let html = '';
+
+  // --- Vocab section ---
+  html += `<div class="sb-section ${c('v')}" id="sec-v">
+    <div class="sb-section-head" onclick="toggleSection('v')">
+      <span>Slovíčka · ${VOCAB.length}</span>
+      <span class="caret">▾</span>
+    </div>
+    <div class="sb-list">`;
+  VOCAB.forEach((w, i) => {
+    const st = progress.vocab[i];
+    const isActive = state.mode === 'vocab' && state.vocabIdx === i;
+    html += `
+      <div class="sb-item ${isActive?'active':''}" onclick="jumpTo('vocab', ${i})">
+        <div class="sb-dot ${st}" onclick="cycleStatus(event,'vocab',${i})" title="Klik: změnit stav"></div>
+        <div class="sb-body">
+          <div class="sb-cz">${w.cz}</div>
+          <div class="sb-en">${w.en}</div>
+        </div>
+      </div>`;
+  });
+  html += `</div></div>`;
+
+  // --- Verbs section ---
+  html += `<div class="sb-section ${c('s')}" id="sec-s">
+    <div class="sb-section-head" onclick="toggleSection('s')">
+      <span>Nepravidelná slovesa · ${VERBS.length}</span>
+      <span class="caret">▾</span>
+    </div>
+    <div class="sb-list">`;
+  VERBS.forEach((v, i) => {
+    const st = progress.verbs[i];
+    const isActive = state.mode === 'verbs' && state.verbIdx === i;
+    html += `
+      <div class="sb-item ${isActive?'active':''}" onclick="jumpTo('verbs', ${i})">
+        <div class="sb-dot ${st}" onclick="cycleStatus(event,'verbs',${i})"></div>
+        <div class="sb-body">
+          <div class="sb-cz">${v.cz}</div>
+          <div class="sb-en">${v.f.join(' · ')}</div>
+        </div>
+      </div>`;
+  });
+  html += `</div></div>`;
+
+  // --- Grammar section ---
+  html += `<div class="sb-section ${c('g')}" id="sec-g">
+    <div class="sb-section-head" onclick="toggleSection('g')">
+      <span>Gramatika · ${GRAMMAR.length}</span>
+      <span class="caret">▾</span>
+    </div>
+    <div class="sb-list">`;
+  GRAMMAR.forEach((g, i) => {
+    const st = progress.grammar[i];
+    const isActive = state.mode === 'grammar' && state.grammarIdx === i;
+    const short = g.prompt.length > 60 ? g.prompt.substring(0,60) + '…' : g.prompt;
+    const correct = g.type === 'fill'
+      ? (g.answer2 ? `${g.answer} / ${g.answer2}` : g.answer)
+      : g.options[g.answer];
+    html += `
+      <div class="sb-item ${isActive?'active':''}" onclick="jumpTo('grammar', ${i})">
+        <div class="sb-dot ${st}" onclick="cycleStatus(event,'grammar',${i})"></div>
+        <div class="sb-body">
+          <div class="sb-cz">${i+1}. ${short}</div>
+          <div class="sb-en">→ ${correct}</div>
+          <div class="sb-gr">${g.src}</div>
+        </div>
+      </div>`;
+  });
+  html += `</div></div>`;
+
+  document.getElementById('sb-content').innerHTML = html;
+
+  // counters in tabs
+  document.getElementById('cnt-vocab').textContent = `${VOCAB.length}`;
+  document.getElementById('cnt-verbs').textContent = `${VERBS.length}`;
+  document.getElementById('cnt-grammar').textContent = `${GRAMMAR.length}`;
+}
+
+/* ============================================================
+   MODE SWITCHING
+   ============================================================ */
+
+function switchMode(m){
+  state.mode = m;
+  state.vocabRevealed = false;
+  document.querySelectorAll('.tab').forEach(t => t.classList.toggle('active', t.dataset.mode === m));
+  renderCard();
+}
+
+/* ============================================================
+   CARD RENDERING
+   ============================================================ */
+
+function renderCard(){
+  const card = document.getElementById('card');
+  if(state.mode === 'vocab') card.innerHTML = renderVocabCard();
+  else if(state.mode === 'verbs') card.innerHTML = renderVerbCard();
+  else card.innerHTML = renderGrammarCard();
+}
+
+/* ===== VOCAB ===== */
+
+function renderVocabCard(){
+  const w = VOCAB[state.vocabIdx];
+  const st = progress.vocab[state.vocabIdx];
+  return `
+    <div class="card-head">
+      <span class="card-kicker">Vocabulary · ${w.src}</span>
+      <span class="card-counter">${state.vocabIdx+1} / ${VOCAB.length}</span>
+    </div>
+    <div class="voc-hint">česky → anglicky · klikni pro překlad</div>
+    <div class="voc-cz">${w.cz}</div>
+
+    <div class="voc-flip ${state.vocabRevealed?'revealed':''}" onclick="flipVocab()">
+      ${state.vocabRevealed
+        ? `<div>
+             <div class="voc-en">${w.en}</div>
+             <div class="voc-ipa">${w.ipa||''}</div>
+             <div class="voc-ex">${w.ex||''}</div>
+           </div>`
+        : `<div class="tap-hint">▾ Klikni pro odhalení ▾</div>`
+      }
+    </div>
+
+    <div class="actions">
+      <button class="btn btn-bad" onclick="markVocab('struggling')">✕ Neumím</button>
+      <button class="btn btn-ok" onclick="markVocab('learned')">✓ Umím</button>
+    </div>
+    <div class="nav-row">
+      <button class="nav-btn" onclick="prevVocab()">← Předchozí</button>
+      <button class="nav-btn" onclick="nextVocab()">Další →</button>
+    </div>
+  `;
+}
+
+function flipVocab(){
+  state.vocabRevealed = !state.vocabRevealed;
+  renderCard();
+}
+
+function markVocab(status){
+  progress.vocab[state.vocabIdx] = status;
+  nextVocab();
+  renderSidebar();
+}
+
+function nextVocab(){
+  // prioritizuj neumím + nezkoušená
+  const remaining = VOCAB.map((_,i)=>i).filter(i => progress.vocab[i] !== 'learned' && i !== state.vocabIdx);
+  if(remaining.length > 0){
+    state.vocabIdx = remaining[Math.floor(Math.random()*remaining.length)];
+  } else {
+    state.vocabIdx = (state.vocabIdx + 1) % VOCAB.length;
+  }
+  state.vocabRevealed = false;
+  renderCard();
+}
+
+function prevVocab(){
+  state.vocabIdx = (state.vocabIdx - 1 + VOCAB.length) % VOCAB.length;
+  state.vocabRevealed = false;
+  renderCard();
+}
+
+/* ===== VERBS ===== */
+
+function renderVerbCard(){
+  const v = VERBS[state.verbIdx];
+  return `
+    <div class="card-head">
+      <span class="card-kicker">Irregular verbs · 3 forms</span>
+      <span class="card-counter">${state.verbIdx+1} / ${VERBS.length}</span>
+    </div>
+    <div class="voc-hint">napiš všechny tři tvary slovesa</div>
+    <div class="verb-cz">${v.cz}</div>
+
+    <div class="verb-grid">
+      <div class="verb-field">
+        <label>Infinitive</label>
+        <input type="text" class="verb-input" id="vi1" autocomplete="off" onkeydown="verbEnter(event)">
+      </div>
+      <div class="verb-field">
+        <label>Past Simple</label>
+        <input type="text" class="verb-input" id="vi2" autocomplete="off" onkeydown="verbEnter(event)">
+      </div>
+      <div class="verb-field">
+        <label>Past Participle</label>
+        <input type="text" class="verb-input" id="vi3" autocomplete="off" onkeydown="verbEnter(event)">
+      </div>
+    </div>
+
+    <div id="verb-fb" class="feedback"></div>
+
+    <div class="actions">
+      <button class="btn btn-ok" onclick="checkVerb()">✓ Zkontrolovat</button>
+      <button class="btn btn-muted" onclick="revealVerb()">? Nevím</button>
+    </div>
+    <div class="nav-row">
+      <button class="nav-btn" onclick="prevVerb()">← Předchozí</button>
+      <button class="nav-btn" onclick="nextVerb()">Další →</button>
+    </div>
+  `;
+}
+
+function verbEnter(e){
+  if(e.key === 'Enter'){
+    e.preventDefault();
+    const inputs = ['vi1','vi2','vi3'];
+    const cur = inputs.indexOf(e.target.id);
+    if(cur < 2){
+      document.getElementById(inputs[cur+1]).focus();
+    } else {
+      checkVerb();
+    }
+  }
+}
+
+function checkVerb(){
+  const v = VERBS[state.verbIdx];
+  const ins = [
+    document.getElementById('vi1'),
+    document.getElementById('vi2'),
+    document.getElementById('vi3')
+  ];
+  const vals = ins.map(i => i.value.trim().toLowerCase());
+  const correct = v.f.map(f => f.toLowerCase());
+  const allOk = vals.every((v,i) => v === correct[i]);
+
+  ins.forEach((inp, i) => {
+    inp.classList.remove('ok','err');
+    inp.classList.add(vals[i] === correct[i] ? 'ok' : 'err');
+  });
+
+  const fb = document.getElementById('verb-fb');
+  if(allOk){
+    fb.className = 'feedback ok show';
+    fb.innerHTML = `<div class="fb-title">✓ Bez chyby!</div><div class="fb-body">Správně: <code>${v.f.join(' — ')}</code></div>`;
+    progress.verbs[state.verbIdx] = 'learned';
+    renderSidebar();
+    setTimeout(() => nextVerb(), 1100);
+  } else {
+    fb.className = 'feedback bad show';
+    fb.innerHTML = `<div class="fb-title">✕ Ještě ne.</div><div class="fb-body">Správné tvary: <code>${v.f.join(' — ')}</code><br>Zkus to znovu, nebo dej „Nevím\" a pohni dál — vrátí se to.</div>`;
+    progress.verbs[state.verbIdx] = 'struggling';
+    renderSidebar();
+  }
+}
+
+function revealVerb(){
+  const v = VERBS[state.verbIdx];
+  document.getElementById('vi1').value = v.f[0];
+  document.getElementById('vi2').value = v.f[1];
+  document.getElementById('vi3').value = v.f[2];
+  const fb = document.getElementById('verb-fb');
+  fb.className = 'feedback info show';
+  fb.innerHTML = `<div class="fb-title">💡 Tady máš řešení</div><div class="fb-body">Sloveso se vrátí zpět do drilu — klikni na „Další\" a setkáme se s ním znovu.</div>`;
+  progress.verbs[state.verbIdx] = 'struggling';
+  renderSidebar();
+}
+
+function nextVerb(){
+  const remaining = VERBS.map((_,i)=>i).filter(i => progress.verbs[i] !== 'learned' && i !== state.verbIdx);
+  if(remaining.length > 0){
+    state.verbIdx = remaining[Math.floor(Math.random()*remaining.length)];
+  } else {
+    state.verbIdx = (state.verbIdx + 1) % VERBS.length;
+  }
+  renderCard();
+}
+
+function prevVerb(){
+  state.verbIdx = (state.verbIdx - 1 + VERBS.length) % VERBS.length;
+  renderCard();
+}
+
+/* ===== GRAMMAR ===== */
+
+function renderGrammarCard(){
+  const g = GRAMMAR[state.grammarIdx];
+  const typeLabel = {
+    pastSimple:"Past Simple",
+    pastCont:"Past Continuous",
+    pastPerfect:"Past Perfect Simple",
+    pastPerfectCont:"Past Perfect Continuous",
+    usedTo:"used to"
+  }[g.topic] || "";
+
+  let body = '';
+  if(g.type === 'circle'){
+    body = `
+      <div class="gr-text">${g.prompt.replace('___','<span class="blank">___</span>')}</div>
+      <div class="gr-options">
+        ${g.options.map((opt,i) => `
+          <button class="gr-opt" data-idx="${i}" onclick="checkGrammar(${i})">
+            <span class="letter">${String.fromCharCode(65+i)}</span>
+            <span>${opt}</span>
+          </button>
+        `).join('')}
+      </div>
+    `;
+  } else {
+    // fill-in
+    const hasSecond = !!g.answer2;
+    body = `
+      <div class="gr-text">${g.prompt.replace(/___/g,'<span class="blank">___</span>')}</div>
+      <div class="verb-grid" style="grid-template-columns:${hasSecond?'1fr 1fr':'1fr'};margin-top:16px">
+        <div class="verb-field">
+          <label>Odpověď 1</label>
+          <input type="text" class="verb-input" id="gi1" autocomplete="off" onkeydown="grammarEnter(event)">
+        </div>
+        ${hasSecond ? `
+          <div class="verb-field">
+            <label>Odpověď 2</label>
+            <input type="text" class="verb-input" id="gi2" autocomplete="off" onkeydown="grammarEnter(event)">
+          </div>
+        ` : ''}
+      </div>
+      <div class="actions" style="margin-top:14px">
+        <button class="btn btn-ok" onclick="checkGrammarFill()">✓ Zkontrolovat</button>
+        <button class="btn btn-muted" onclick="revealGrammar()">? Nevím</button>
+      </div>
+    `;
+  }
+
+  return `
+    <div class="card-head">
+      <span class="card-kicker">Grammar · ${g.src}</span>
+      <span class="card-counter">${state.grammarIdx+1} / ${GRAMMAR.length}</span>
+    </div>
+    <div class="gr-type">${typeLabel}</div>
+    ${body}
+    <div id="gr-fb" class="feedback"></div>
+    <div class="nav-row">
+      <button class="nav-btn" onclick="prevGrammar()">← Předchozí</button>
+      <button class="nav-btn" onclick="nextGrammar()">Další →</button>
+    </div>
+  `;
+}
+
+function grammarEnter(e){
+  if(e.key === 'Enter'){
+    e.preventDefault();
+    const g = GRAMMAR[state.grammarIdx];
+    if(g.answer2 && e.target.id === 'gi1'){
+      document.getElementById('gi2').focus();
+    } else {
+      checkGrammarFill();
+    }
+  }
+}
+
+function checkGrammar(picked){
+  const g = GRAMMAR[state.grammarIdx];
+  document.querySelectorAll('.gr-opt').forEach(el => el.classList.remove('picked','ok','err'));
+  const buttons = document.querySelectorAll('.gr-opt');
+  const fb = document.getElementById('gr-fb');
+
+  if(picked === g.answer){
+    buttons[picked].classList.add('ok');
+    progress.grammar[state.grammarIdx] = 'learned';
+    fb.className = 'feedback ok show';
+    fb.innerHTML = `<div class="fb-title">✓ Správně!</div><div class="fb-body">${g.explain}</div>`;
+  } else {
+    buttons[picked].classList.add('err');
+    buttons[g.answer].classList.add('ok');
+    progress.grammar[state.grammarIdx] = 'struggling';
+    fb.className = 'feedback bad show';
+    fb.innerHTML = `<div class="fb-title">✕ To není ono</div><div class="fb-body">Správná odpověď: <code>${g.options[g.answer]}</code><br><br>${g.explain}</div>`;
+  }
+  renderSidebar();
+}
+
+function checkGrammarFill(){
+  const g = GRAMMAR[state.grammarIdx];
+  const v1 = document.getElementById('gi1').value.trim().toLowerCase();
+  const v2 = g.answer2 ? document.getElementById('gi2').value.trim().toLowerCase() : null;
+  const a1 = g.answer.toLowerCase();
+  const a2 = g.answer2 ? g.answer2.toLowerCase() : null;
+
+  const ok1 = v1 === a1;
+  const ok2 = a2 ? v2 === a2 : true;
+
+  document.getElementById('gi1').classList.remove('ok','err');
+  document.getElementById('gi1').classList.add(ok1?'ok':'err');
+  if(a2){
+    document.getElementById('gi2').classList.remove('ok','err');
+    document.getElementById('gi2').classList.add(ok2?'ok':'err');
+  }
+
+  const fb = document.getElementById('gr-fb');
+  if(ok1 && ok2){
+    progress.grammar[state.grammarIdx] = 'learned';
+    fb.className = 'feedback ok show';
+    const correctText = g.answer2 ? `${g.answer} / ${g.answer2}` : g.answer;
+    fb.innerHTML = `<div class="fb-title">✓ Výborně!</div><div class="fb-body"><code>${correctText}</code><br><br>${g.explain}</div>`;
+  } else {
+    progress.grammar[state.grammarIdx] = 'struggling';
+    fb.className = 'feedback bad show';
+    const correctText = g.answer2 ? `${g.answer} / ${g.answer2}` : g.answer;
+    fb.innerHTML = `<div class="fb-title">✕ Zkus to znovu</div><div class="fb-body">Správně: <code>${correctText}</code><br><br>${g.explain}</div>`;
+  }
+  renderSidebar();
+}
+
+function revealGrammar(){
+  const g = GRAMMAR[state.grammarIdx];
+  if(g.type === 'fill'){
+    document.getElementById('gi1').value = g.answer;
+    if(g.answer2) document.getElementById('gi2').value = g.answer2;
+  }
+  const fb = document.getElementById('gr-fb');
+  fb.className = 'feedback info show';
+  const correctText = g.answer2 ? `${g.answer} / ${g.answer2}` : (g.type==='fill' ? g.answer : g.options[g.answer]);
+  fb.innerHTML = `<div class="fb-title">💡 Řešení</div><div class="fb-body"><code>${correctText}</code><br><br>${g.explain}</div>`;
+  progress.grammar[state.grammarIdx] = 'struggling';
+  renderSidebar();
+}
+
+function nextGrammar(){
+  const remaining = GRAMMAR.map((_,i)=>i).filter(i => progress.grammar[i] !== 'learned' && i !== state.grammarIdx);
+  if(remaining.length > 0){
+    state.grammarIdx = remaining[Math.floor(Math.random()*remaining.length)];
+  } else {
+    state.grammarIdx = (state.grammarIdx + 1) % GRAMMAR.length;
+  }
+  renderCard();
+}
+
+function prevGrammar(){
+  state.grammarIdx = (state.grammarIdx - 1 + GRAMMAR.length) % GRAMMAR.length;
+  renderCard();
+}
+
+/* ============================================================
+   INIT
+   ============================================================ */
+
+renderSidebar();
+renderCard();
+</script>
+</body>
+</html>
